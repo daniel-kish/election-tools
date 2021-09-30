@@ -151,7 +151,7 @@ if __name__ == "__main__":
     errors = codecs.open(err_log_path, mode="w", encoding='utf-8')
 
     cnt = 0
-    for row in rows[21000:]:
+    for row in rows[1:]:
         try:
             print("\r{}/{}".format(cnt, len(rows)-1))
             cnt += 1
