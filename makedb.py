@@ -153,9 +153,6 @@ if __name__ == "__main__":
     cnt = 0
     for row in rows[1:]:
         try:
-            print("\r{}/{}".format(cnt, len(rows)-1))
-            cnt += 1
-
             cols_values = dict()
 
             # usual fields calculation
@@ -194,6 +191,8 @@ if __name__ == "__main__":
             query = u"INSERT INTO {table_name} VALUES ({})".format(', '.join(values),
                                                                    table_name=config['table_name'])
             c.execute(query)
+            cnt += 1
+            print "{}/{}\r".format(cnt, len(rows)-1),
         except Exception as x:
             errors.write("Error: {}\n".format(x))
             for i in range(0, len(row)):
