@@ -1,5 +1,4 @@
 import csv
-import sys
 import argparse
 import json
 import sqlite3
@@ -111,6 +110,11 @@ if __name__ == "__main__":
 
         if args.protocol:
             proto_fields, proto_values = get_protocol_table(args.protocol)
+
+            for i in range(0,len(proto_fields)):
+                print proto_fields[i].decode('utf-8'),
+                print proto_values[i].decode('utf-8')
+
             p = subseq(proto_values, values)
             for i in range(0, len(headers)):
                 pf = proto_fields[i - p] if i >= p else "---"
