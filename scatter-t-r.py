@@ -9,13 +9,13 @@ if __name__ == "__main__":
 	parser.add_argument("--cand", help="Candidate name (case insensitive)")
 	parser.add_argument("--election", help="Election name")
 	parser.add_argument("--size", help="Dot size factor")
-	parser.add_argument("--region", help="Region (for federal election only)")
+	parser.add_argument("--regions", nargs="*", help="Region(-s) (for federal election only)")
 	parser.add_argument("--tik", help="TIK filter")
 
 	args = parser.parse_args()
 
-	if args.region:
-		uregion = args.region.decode('cp1251').encode('utf-8').decode('utf-8')
+	if args.regions:
+		uregions = [x.decode('cp1251').encode('utf-8').decode('utf-8') for x in args.regions]
 	if args.tik:
 		utik = args.tik.decode('cp1251').encode('utf-8').decode('utf-8')
 
@@ -28,14 +28,17 @@ FROM {election}
 """
 	
 	filters = []
-	if args.region:
-		filters.append(u'region like "%{}%"'.format(uregion))
+	if args.regions:
+		reg_filters = [u'region like "%{}%"'.format(uregion) for uregion in uregions]
+		filters.append(u'(' + u' OR '.join(reg_filters) + u')')
 	if args.tik:
 		filters.append(u'tik like "%{}%"'.format(utik))
 	if filters:
 		query += u'WHERE ' + u' AND '.join(filters)
 
 	query = query.format(cand=args.cand, election=args.election)
+	print(query)
+
 	x = []
 	y = []
 	w = []
