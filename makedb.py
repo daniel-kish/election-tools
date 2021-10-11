@@ -24,7 +24,14 @@ fields_type = {
     "lostBallots": "integer",
     "unaccountedBallots": "integer",
     "ballotsIssued": "integer",
-    "ballotsFound": "integer"
+    "ballotsFound": "integer",
+    "absenteeCertificatesAllocated": "integer",
+    "absenteeCertificatesIssued": "integer",
+    "votesWithAbsenteeCertificates": "integer",
+    "unusedAbsenteeCertificates": "integer",
+    "absenteeCertificatesIssuedByTer": "integer",
+    "lostAbsCertificates": "integer",
+    "coib": "integer",
 }
 
 
