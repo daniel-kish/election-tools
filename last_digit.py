@@ -44,7 +44,7 @@ def check(numbers):
 	print "\nChi-square test:"
 	chs = chisquare(f_obs=ocs)
 	print("pvalue: {}".format(chs.pvalue))
-	pvalue_log = abs(int(math.log(chs.pvalue, 10)))
+	pvalue_log = int(math.log(chs.pvalue, 10))
 	print("pvalue log10: {}".format(pvalue_log))
 
 
@@ -63,7 +63,7 @@ SELECT {params}
 FROM {election}
 """
 
-	filter_str = u''
+	filter_str = u'turnout > 0.55'
 	params_str = ', '.join(params)
 	q = query_tmplt.format(params=params_str, election=election)
 	if filter_str:
@@ -75,6 +75,11 @@ FROM {election}
 		for elm in row:
 			numbers.append(int(elm))
 
-	numbers = [n % 10 for n in numbers]
+	numbers = [n for n in numbers if n > 0]
 
+	# bin_edges = np.arange(-0.5, max(numbers), 1)
+	# plt.hist(numbers, bins=bin_edges, ec='black')
+	# plt.show()
+
+	numbers = [n % 10 for n in numbers]
 	check(numbers)
