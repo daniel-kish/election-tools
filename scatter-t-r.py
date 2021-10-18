@@ -9,10 +9,13 @@ if __name__ == "__main__":
 	parser.add_argument("--election", help="Election name")
 	parser.add_argument("--size", help="Dot size factor")
 	parser.add_argument("--regions", nargs="*", help="Region(-s) (for federal election only)")
+	parser.add_argument("--region-name", help="Region's proper name (not a wildcard) (for federal election only)")
 	parser.add_argument("--tik", help="TIK filter")
 
 	args = parser.parse_args()
 
+	if args.region_name:
+		uregion_name = args.region_name.decode('cp1251').encode('utf-8').decode('utf-8')
 	if args.regions:
 		uregions = [x.decode('cp1251').encode('utf-8').decode('utf-8') for x in args.regions]
 	if args.tik:
@@ -27,11 +30,14 @@ FROM {election}
 """
 	
 	filters = []
+	if args.region_name:
+		filters = [u'region = "{}"'.format(uregion_name)]
 	if args.regions:
 		reg_filters = [u'region like "%{}%"'.format(uregion) for uregion in uregions]
 		filters.append(u'(' + u' OR '.join(reg_filters) + u')')
 	if args.tik:
 		filters.append(u'tik like "%{}%"'.format(utik))
+
 	if filters:
 		query += u'WHERE ' + u' AND '.join(filters)
 
