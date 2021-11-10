@@ -55,7 +55,7 @@ Strong signs of possible fraud: {fraud}
     freq_by_digit = ''
 
     for digit, freq in stats.digit_frequencies.items():
-        freq_by_digit += "{}: {:8.5} {}\n".format(digit, freq, freq > stats.p - 3*stats.sigma and freq < stats.p + 3*stats.sigma)
+        freq_by_digit += "{}: {:<08.5} {}\n".format(digit, freq, freq > stats.p - 3*stats.sigma and freq < stats.p + 3*stats.sigma)
 
     zeros_too_frequent = stats.digit_frequencies[0] > stats.p + 3*stats.sigma
     fraud = "yes" if zeros_too_frequent and stats.chisquare.pvalue < 0.05 else "no"
@@ -87,7 +87,12 @@ def show_plot(stats, extra_text):
     plt.axhline(stats.p - 3*stats.sigma, label=ur'Ожидаемая - 3$\sigma$', color=next_color, zorder=2, linewidth=3)
 
     plt.xticks(range(0,stats.digits_number))
-    plt.ylim(bottom=stats.min_frequency*0.95, top=stats.max_frequency*1.05)
+
+    range_e = max(stats.max_frequency, stats.p + 3*stats.sigma)
+    range_b = min(stats.min_frequency, stats.p - 3*stats.sigma)
+    mid_y = (range_b + range_e)*0.5
+    range_len = abs(range_b - range_e)
+    plt.ylim([mid_y - range_len, mid_y + range_len])
     plt.xlabel(u'Цифра')
     plt.ylabel(u'Частота')
 
@@ -151,7 +156,6 @@ if __name__ == "__main__":
     parser.add_argument("--base", help="Number base", default=10)
     parser.add_argument("--include-zeros", action='store_true', help="Whether to filter out zeros")
     parser.add_argument("--plot", action='store_true', help="Show plot")
-    # parser.add_mutually_exclusive_group(required=True)
     parser.add_argument("--region", help="Show data from specified region")
     parser.add_argument("--turnout-higher", help="Show data from precincts with turnout higher than specified")
     parser.add_argument("--turnout-lower", help="Show data from precincts with turnout lower than specified")
