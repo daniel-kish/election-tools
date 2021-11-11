@@ -128,7 +128,7 @@ FROM {election}
         q += "WHERE " + filter_str
 
     numbers = []
-    print u"Query:\n", q
+    # print u"Query:\n", q
 
     for row in c.execute(q):
         for elm in row:
@@ -137,16 +137,16 @@ FROM {election}
     return numbers
 
 
+default_params = [
+    "votersReg",
+    "ballotsIssuedOnStation",
+    "validBallots",
+]
+
 if __name__ == "__main__":
     """Example usage string:
     `last_digit.py --db 2021.db --election pres2018 --params `
     """
-
-    default_params = [
-        "votersReg",
-        "ballotsIssuedOnStation",
-        "validBallots",
-    ]
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--db", help="Path to results DB", required=True)
