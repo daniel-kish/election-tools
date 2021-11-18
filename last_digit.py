@@ -137,11 +137,18 @@ FROM {election}
     return numbers
 
 
+def show_hist(numbers):
+    plt.hist(numbers, bins=range(0,max(numbers),10))
+    plt.show()
+
+
 default_params = [
     "votersReg",
     "ballotsIssuedOnStation",
+    "ballotsInStationaryBoxes",
     "validBallots",
 ]
+
 
 if __name__ == "__main__":
     """Example usage string:
@@ -154,32 +161,52 @@ if __name__ == "__main__":
     parser.add_argument("--basic-params", nargs="*", help="Basic parameters to analyze", default=default_params)
     parser.add_argument("--spec-params", nargs="*", help="Parameters to add to basic", default=[])
     parser.add_argument("--base", help="Number base", default=10)
-    parser.add_argument("--include-zeros", action='store_true', help="Whether to filter out zeros")
+    parser.add_argument("--greater", help="Leave values greater than the specified", default=0)
     parser.add_argument("--plot", action='store_true', help="Show plot")
     parser.add_argument("--region", help="Show data from specified region")
     parser.add_argument("--turnout-higher", help="Show data from precincts with turnout higher than specified")
     parser.add_argument("--turnout-lower", help="Show data from precincts with turnout lower than specified")
+    parser.add_argument("--res-lower", help="Show data from precincts with candidate's result lower than specified")
+    parser.add_argument("--cand", help="Specifies candidate for res-lower")
+    parser.add_argument("--hist", action='store_true', help="Show histogram")
+    parser.add_argument("--sql-filter", help="Show data from precincts satisfying specified filter")
 
     args = parser.parse_args()
 
     filter_str = ""
     uregion = u""
     extra_text = u""
-    if args.region:
-        uregion = args.region.decode('cp1251').encode('utf-8').decode('utf-8')
-        filter_str=u'region = "{}"'.format(uregion)
-        extra_text = uregion
-    elif args.turnout_higher:
-        filter_str=u'turnout > {}'.format(float(args.turnout_higher))
-        extra_text = u"Явка выше {}".format(float(args.turnout_higher))
-    elif args.turnout_lower:
-        filter_str=u'turnout <= {}'.format(float(args.turnout_lower))
-        extra_text = u"Явка ниже {}".format(float(args.turnout_lower))
+
+    if not args.sql_filter:
+        if args.region:
+            uregion = args.region.decode('cp1251').encode('utf-8').decode('utf-8')
+            filter_str=u'region = "{}"'.format(uregion)
+            extra_text = uregion
+        elif args.turnout_higher:
+            filter_str=u'turnout > {}'.format(float(args.turnout_higher))
+            extra_text = u"Явка выше {}".format(float(args.turnout_higher))
+        elif args.turnout_lower:
+            filter_str=u'turnout <= {}'.format(float(args.turnout_lower))
+            extra_text = u"Явка ниже {}".format(float(args.turnout_lower))
+
+        if args.res_lower:
+            if not args.cand:
+                print("Error: must provide --cand for --res-lower")
+                exit(2)
+            filter_str += (u' AND ' if filter_str else '') + u'{}_res <= {}'.format(args.cand, args.res_lower)
+            extra_text += u' результат ниже {}'.format(args.res_lower)
+    else:
+        filter_str = args.sql_filter.decode('cp1251').encode('utf-8').decode('utf-8')
 
     data = get_data(args.db, args.election, args.basic_params + args.spec_params, filter_str)
 
-    if not args.include_zeros:
-        data = filter(lambda x: x > 0, data)
+    if args.greater:
+        thresh = int(args.greater)
+        data = filter(lambda x: x > thresh, data)
+
+    if args.hist:
+        show_hist(data)
+        exit(1)
 
     dist_data = DigitStats(data, base=int(args.base))
 
