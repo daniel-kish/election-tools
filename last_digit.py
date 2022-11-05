@@ -4,9 +4,9 @@ import sqlite3
 import argparse
 import matplotlib.pyplot as plt
 from collections import Counter
+from collections import OrderedDict
 import math
 from scipy.stats import chisquare
-import random
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -22,9 +22,9 @@ class DigitStats:
         self.sigma = math.sqrt(self.p * self.q / self.numbers_total)
         self.max_frequency = float(max(self.counter.values()))/self.numbers_total
         self.min_frequency = float(min(self.counter.values()))/self.numbers_total
-        self.chisquare = chisquare(self.counter.values())
+        self.chisquare = chisquare(list(self.counter.values()))
 
-        self.digit_frequencies = dict()
+        self.digit_frequencies = OrderedDict()
         for digit, occurences in self.counter.items():
             frequency = float(occurences) / self.numbers_total
             self.digit_frequencies[digit] = frequency
@@ -49,23 +49,21 @@ Chi-square test
 ---------------
 Chi-square statistic: {chisq_stat}
 Chi-square pvalue: {chisq_p}
-Strong signs of possible fraud: {fraud}
 '''
 
     freq_by_digit = ''
-
-    for digit, freq in stats.digit_frequencies.items():
-        freq_by_digit += "{}: {:<08.5} {}\n".format(digit, freq, freq > stats.p - 3*stats.sigma and freq < stats.p + 3*stats.sigma)
+    srt = sorted(stats.digit_frequencies.items())
+    for digit, freq in srt:
+        sigma_dev = (freq - stats.p)/stats.sigma
+        freq_by_digit += "{}: {:<08.5} {:< 6.3} {}\n".format(digit, freq, sigma_dev, '*' if abs(sigma_dev) > 3 else ' ')
 
     zeros_too_frequent = stats.digit_frequencies[0] > stats.p + 3*stats.sigma
-    fraud = "yes" if zeros_too_frequent and stats.chisquare.pvalue < 0.05 else "no"
 
     return report_template.format(num_total=stats.numbers_total,
                            three_sigma=3*stats.sigma,
                            freq_by_digit=freq_by_digit,
                            chisq_stat=stats.chisquare.statistic,
-                           chisq_p=stats.chisquare.pvalue,
-                           fraud=fraud)
+                           chisq_p=stats.chisquare.pvalue)
 
 
 def show_plot(stats, extra_text):
@@ -83,8 +81,8 @@ def show_plot(stats, extra_text):
 
     next_color = next(ax._get_lines.prop_cycler)['color']
 
-    plt.axhline(stats.p + 3*stats.sigma, label=ur'Ожидаемая + 3$\sigma$', color=next_color, zorder=2, linewidth=3)
-    plt.axhline(stats.p - 3*stats.sigma, label=ur'Ожидаемая - 3$\sigma$', color=next_color, zorder=2, linewidth=3)
+    plt.axhline(stats.p + 3*stats.sigma, label=r'Ожидаемая + 3$\sigma$', color=next_color, zorder=2, linewidth=3)
+    plt.axhline(stats.p - 3*stats.sigma, label=r'Ожидаемая - 3$\sigma$', color=next_color, zorder=2, linewidth=3)
 
     plt.xticks(range(0,stats.digits_number))
 
@@ -128,7 +126,7 @@ FROM {election}
         q += "WHERE " + filter_str
 
     numbers = []
-    # print u"Query:\n", q
+    print(q)
 
     for row in c.execute(q):
         for elm in row:
@@ -137,16 +135,19 @@ FROM {election}
     return numbers
 
 
-def show_hist(numbers):
-    plt.hist(numbers, bins=range(0,max(numbers),10))
+def show_hist(numbers, bin_step):
+    plt.hist(numbers, bins=range(0, max(numbers), bin_step))
+    plt.grid(which='both')
+    plt.minorticks_on()
     plt.show()
 
 
 default_params = [
-    "votersReg",
+    # "votersReg",
+    # "ballotsIssued",
     "ballotsIssuedOnStation",
-    "ballotsInStationaryBoxes",
-    "validBallots",
+    # "ballotsInStationaryBoxes",
+    # "validBallots",
 ]
 
 
@@ -168,7 +169,7 @@ if __name__ == "__main__":
     parser.add_argument("--turnout-lower", help="Show data from precincts with turnout lower than specified")
     parser.add_argument("--res-lower", help="Show data from precincts with candidate's result lower than specified")
     parser.add_argument("--cand", help="Specifies candidate for res-lower")
-    parser.add_argument("--hist", action='store_true', help="Show histogram")
+    parser.add_argument("--hist", help="Show data histogram")
     parser.add_argument("--sql-filter", help="Show data from precincts satisfying specified filter")
 
     args = parser.parse_args()
@@ -179,7 +180,7 @@ if __name__ == "__main__":
 
     if not args.sql_filter:
         if args.region:
-            uregion = args.region.decode('cp1251').encode('utf-8').decode('utf-8')
+            uregion = args.region
             filter_str=u'region = "{}"'.format(uregion)
             extra_text = uregion
         elif args.turnout_higher:
@@ -196,16 +197,16 @@ if __name__ == "__main__":
             filter_str += (u' AND ' if filter_str else '') + u'{}_res <= {}'.format(args.cand, args.res_lower)
             extra_text += u' результат ниже {}'.format(args.res_lower)
     else:
-        filter_str = args.sql_filter.decode('cp1251').encode('utf-8').decode('utf-8')
+        filter_str = args.sql_filter.encode('utf-8').decode('utf-8')
 
     data = get_data(args.db, args.election, args.basic_params + args.spec_params, filter_str)
 
     if args.greater:
         thresh = int(args.greater)
-        data = filter(lambda x: x > thresh, data)
+        data = list(filter(lambda x: x > thresh, data))
 
     if args.hist:
-        show_hist(data)
+        show_hist(data, int(args.hist))
         exit(1)
 
     dist_data = DigitStats(data, base=int(args.base))
@@ -213,4 +214,4 @@ if __name__ == "__main__":
     if args.plot:
         show_plot(dist_data, extra_text)
     else:
-        print detailed_report(dist_data)
+        print(detailed_report(dist_data))
